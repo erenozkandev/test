@@ -9,7 +9,6 @@
         content="The next release of ADHD Generator is almost here. Get a dopamine-rich video builder built for creators.">
 
     <!-- FAVICON -->
-    <!-- Put favicon.png in the same folder as this index.html -->
     <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
     <link rel="shortcut icon" type="image/png" href="favicon.png">
     <link rel="apple-touch-icon" href="favicon.png">
@@ -147,6 +146,12 @@
                         action="https://formsubmit.co/support@adhdgenerator.com"
                         class="flex flex-col sm:flex-row gap-3 items-stretch"
                     >
+                        <!-- FormSubmit config -->
+                        <input type="hidden" name="_captcha" value="false">
+                        <input type="hidden" name="_subject" value="New ADHD Generator waitlist signup">
+                        <input type="hidden" name="_template" value="basic">
+                        <input type="hidden" name="_next" value="https://adhdgenerator.com/?joined=1">
+
                         <input type="email" id="notifyEmail" name="email" required
                             class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-orange/70 focus:border-brand-orange/70"
                             placeholder="Your email for first dibs">
@@ -237,15 +242,23 @@
         const notifyEmail = document.getElementById('notifyEmail');
         const notifyMessage = document.getElementById('notifyMessage');
 
-        if (notifyForm && notifyEmail && notifyMessage) {
-            notifyForm.addEventListener('submit', async (event) => {
-                event.preventDefault();
+        // Show success message if redirected back with ?joined=1
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('joined') === '1' && notifyMessage) {
+            notifyMessage.textContent = 'You are on the list. We will ping you when the new drop goes live.';
+            notifyMessage.classList.remove('hidden');
+            notifyMessage.classList.add('text-emerald-300');
+        }
 
+        if (notifyForm && notifyEmail && notifyMessage) {
+            notifyForm.addEventListener('submit', (event) => {
                 const email = notifyEmail.value.trim();
+
                 if (!email) {
                     notifyMessage.textContent = 'Please add your email so we can send you the invite.';
                     notifyMessage.classList.remove('hidden', 'text-emerald-300');
                     notifyMessage.classList.add('text-red-300');
+                    event.preventDefault();
                     return;
                 }
 
@@ -254,44 +267,16 @@
                     notifyMessage.textContent = 'That does not look like a valid email. Try again?';
                     notifyMessage.classList.remove('hidden', 'text-emerald-300');
                     notifyMessage.classList.add('text-red-300');
+                    event.preventDefault();
                     return;
                 }
 
-                notifyMessage.textContent = 'Adding you to the list...';
-                notifyMessage.classList.remove('hidden', 'text-red-300', 'text-emerald-300');
-                notifyMessage.classList.add('text-gray-300');
-
+                // Optional: remember email locally
                 try {
-                    const formData = new FormData();
-                    formData.append('email', email);
+                    localStorage.setItem('adhd_generator_waitlist_email', email);
+                } catch (_) {}
 
-                    const endpoint = notifyForm.getAttribute('action');
-
-                    const response = await fetch(endpoint, {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'Accept': 'application/json'
-                        }
-                    });
-
-                    if (response.ok) {
-                        localStorage.setItem('adhd_generator_waitlist_email', email);
-                        notifyMessage.textContent = 'You are on the list. We will ping you when the new drop goes live.';
-                        notifyMessage.classList.remove('text-gray-300', 'text-red-300');
-                        notifyMessage.classList.add('text-emerald-300');
-                        notifyForm.reset();
-                    } else {
-                        notifyMessage.textContent = 'Something glitched while saving your email. Try again in a bit?';
-                        notifyMessage.classList.remove('text-gray-300', 'text-emerald-300');
-                        notifyMessage.classList.add('text-red-300');
-                    }
-                } catch (error) {
-                    console.error(error);
-                    notifyMessage.textContent = 'Network issue. Check your connection and try again.';
-                    notifyMessage.classList.remove('text-gray-300', 'text-emerald-300');
-                    notifyMessage.classList.add('text-red-300');
-                }
+                // Let the browser submit the form to FormSubmit (no fetch)
             });
         }
     </script>
